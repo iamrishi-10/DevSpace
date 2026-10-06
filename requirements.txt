@@ -1,0 +1,8 @@
+# DevSpace V1 - Direct Python dependencies
+
+# Runtime dependencies
+typer
+rich
+
+# Development / testing dependencies
+pytest

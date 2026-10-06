@@ -1,0 +1,26 @@
+[project]
+name = "devspace"
+version = "0.1.0"
+description = "Register local projects and run, test, and inspect them from one CLI."
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Rishi Lalwaney", email = "rishilalwaney786@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "rich>=15.0.0",
+    "typer>=0.27.2",
+]
+
+[project.scripts]
+devspace = "devspace.cli:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.13,<0.13.0"]
+build-backend = "uv_build"
