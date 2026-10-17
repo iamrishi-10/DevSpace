@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-devspace = "devspace.cli:app"
+devspace = "devspace.cli:start"
 
 [dependency-groups]
 dev = [

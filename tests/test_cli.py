@@ -1,3 +1,4 @@
+import io
 import json
 import os
 import shlex
@@ -8,7 +9,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from devspace.cli import app
+from devspace.cli import app, start
 
 runner = CliRunner()
 
@@ -32,11 +33,36 @@ def storage_file(home: Path) -> Path:
     return home / ".devspace" / "projects.json"
 
 
-def test_no_args_shows_help():
-    result = runner.invoke(app, [])
+def test_start_opens_the_interactive_shell(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["devspace"])
+    monkeypatch.setattr(sys, "stdin", io.StringIO("list\nexit\n"))
 
-    assert "add" in result.output
-    assert "Usage" in result.output
+    start()
+
+    out = capsys.readouterr().out
+    assert "DevSpace shell" in out
+    assert "No projects registered." in out
+
+
+def test_start_rejects_command_line_arguments(monkeypatch, capsys, fake_home):
+    monkeypatch.setattr(sys, "argv", ["devspace", "list"])
+
+    with pytest.raises(SystemExit) as exc_info:
+        start()
+
+    assert exc_info.value.code == 2
+    captured = capsys.readouterr()
+    assert "takes no arguments" in captured.err
+    assert "DevSpace shell" not in captured.out
+
+
+def test_command_registry_lists_all_commands():
+    result = runner.invoke(app, ["--help"])
+
+    for command in ("add", "list", "remove", "status", "run", "test", "info"):
+        assert command in result.output
+    assert "shell" not in result.output
+    assert "completion" not in result.output
 
 
 def test_add_registers_and_persists_project(fake_home, project_dir):

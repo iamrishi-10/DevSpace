@@ -27,6 +27,7 @@ Instead of repeatedly navigating into project directories and remembering how ea
 - Store project-specific test commands
 - Execute commands directly inside the registered project directory
 - Works independently of package managers or frameworks
+- Interactive shell with command history: run `devspace` and work from its prompt
 - Friendly CLI errors
 - Local JSON-based persistence
 - Installable as a global CLI command
@@ -58,16 +59,22 @@ cd /projects/service
 ./gradlew bootRun
 ```
 
-With DevSpace, you register those details once:
+With DevSpace, you start the shell once:
 
 ```bash
-devspace add api /projects/api
+devspace
+```
+
+register those details once:
+
+```text
+devspace> add api /projects/api
 ```
 
 and later run:
 
-```bash
-devspace run api
+```text
+devspace> run api
 ```
 
 from anywhere.
@@ -111,11 +118,13 @@ Reload your shell:
 exec $SHELL
 ```
 
-Verify the installation:
+Verify the installation by starting the shell:
 
 ```bash
-devspace --help
+devspace
 ```
+
+Type `help` to list the commands and `exit` to leave.
 
 You should now be able to use DevSpace from any directory.
 
@@ -123,53 +132,88 @@ You should now be able to use DevSpace from any directory.
 
 # Usage
 
-## Add a project
+DevSpace runs as an interactive shell. Start it with:
 
 ```bash
-devspace add NAME PATH
+devspace
+```
+
+`devspace` takes no arguments. Running something like `devspace list` from your terminal prints a reminder and exits. Start the shell, then type the commands at the prompt:
+
+```text
+DevSpace shell. Type 'help' for commands, 'exit' to quit.
+devspace> list
+devspace> status raglens
+devspace> run raglens
+devspace> exit
+```
+
+In the shell:
+
+- Type commands without the `devspace` prefix (`list`, not `devspace list`).
+- Use the **Up / Down arrows** to recall earlier commands and edit them.
+- Command history is saved to `~/.devspace/history`, so it is still there next time.
+- Output stays in your terminal, so you can scroll back through it as usual.
+- A failed command prints an error and leaves you at the prompt.
+- `help` lists the commands, and `help COMMAND` shows details for one.
+- Leave with `exit`, `quit`, or Ctrl-D. Ctrl-C clears the current line.
+
+All commands below are typed at the `devspace>` prompt.
+
+---
+
+## Add a project
+
+```text
+devspace> add NAME PATH
 ```
 
 Example:
 
-```bash
-devspace add raglens /projects/raglens
+```text
+devspace> add raglens /projects/raglens
 ```
 
 If the project name or path contains spaces, wrap it in quotes:
 
-```bash
-devspace add "AI Agents" "/projects/AI Agents"
+```text
+devspace> add "AI Agents" "/projects/AI Agents"
 ```
 
-DevSpace will prompt for the project type:
+The path must exist and be a directory. `~` is expanded and the path is stored as an absolute path.
+
+DevSpace then prompts for the project type:
 
 ```text
 Project type (python/java/javascript/typescript/generic):
 ```
 
-and optionally ask for:
+(an invalid answer is rejected and you are asked again) and for two optional commands:
 
 ```text
-Run command
-Test command
+Run command (optional):
+Test command (optional):
 ```
 
 Example:
 
 ```text
-Project type: python
-Run command: uv run uvicorn main:app --reload
-Test command: uv run pytest
+Project type (python/java/javascript/typescript/generic): python
+Run command (optional): uv run uvicorn main:app --reload
+Test command (optional): uv run pytest
+Project 'raglens' added successfully.
 ```
 
-The run and test commands are optional.
+Press Enter to skip a command.
+
+Project names must be unique, and the same directory cannot be registered twice.
 
 ---
 
 ## List projects
 
-```bash
-devspace list
+```text
+devspace> list
 ```
 
 Example output:
@@ -184,20 +228,22 @@ Example output:
 └────────────┴────────────┴────────┴─────────┴──────────────────────┘
 ```
 
-The Git status is read live whenever the command runs.
+`Status` is `clean`, `dirty`, or `not-git` (the directory is not a Git repository). `Branch` is `-` when there is no branch to show.
+
+The Git status is read live whenever the command runs. If no projects are registered, DevSpace prints `No projects registered.`
 
 ---
 
 ## Show project information
 
-```bash
-devspace info NAME
+```text
+devspace> info NAME
 ```
 
 Example:
 
-```bash
-devspace info raglens
+```text
+devspace> info raglens
 ```
 
 Example output:
@@ -221,14 +267,14 @@ Last commit:    Add JSON persistence
 
 ## Check Git status
 
-```bash
-devspace status NAME
+```text
+devspace> status NAME
 ```
 
 Example:
 
-```bash
-devspace status raglens
+```text
+devspace> status raglens
 ```
 
 Example output:
@@ -243,22 +289,24 @@ Last commit:  Add JSON persistence
 If the project is not a Git repository:
 
 ```text
-Project: raglens
-Git:     Not initialized
+Project:      raglens
+Git:          Not initialized
 ```
+
+A repository with no commits yet shows `Last commit:  No commits yet`.
 
 ---
 
 ## Run a project
 
-```bash
-devspace run NAME
+```text
+devspace> run NAME
 ```
 
 Example:
 
-```bash
-devspace run raglens
+```text
+devspace> run raglens
 ```
 
 If the stored run command is:
@@ -277,18 +325,20 @@ cd /projects/raglens
 
 first.
 
+The command's output appears directly in your terminal. If the project has no run command stored, or the command fails, DevSpace prints an error and exits with code 1.
+
 ---
 
 ## Run project tests
 
-```bash
-devspace test NAME
+```text
+devspace> test NAME
 ```
 
 Example:
 
-```bash
-devspace test raglens
+```text
+devspace> test raglens
 ```
 
 If the stored test command is:
@@ -297,20 +347,20 @@ If the stored test command is:
 uv run pytest
 ```
 
-DevSpace runs it inside the registered project directory.
+DevSpace runs it inside the registered project directory. It behaves like `run`: output goes to your terminal, and a missing test command or a failing test run is reported as an error with exit code 1.
 
 ---
 
 ## Remove a project
 
-```bash
-devspace remove NAME
+```text
+devspace> remove NAME
 ```
 
 Example:
 
-```bash
-devspace remove raglens
+```text
+devspace> remove raglens
 ```
 
 Removing a project only removes it from the DevSpace registry.
@@ -356,7 +406,7 @@ DevSpace simply executes the command provided during registration.
 DevSpace follows a small layered architecture:
 
 ```text
-CLI
+CLI  (cli.py, plus the interactive shell in shell.py)
  │
  ▼
 ProjectRegistry
@@ -380,7 +430,7 @@ CommandRunner
     └── User-defined commands
 ```
 
-The CLI handles user interaction.
+The CLI handles user interaction. The shell is a thin loop that feeds each line you type to the same CLI commands.
 
 The registry handles project-related business rules.
 
@@ -402,6 +452,7 @@ devspace/
 │   └── devspace/
 │       ├── __init__.py
 │       ├── cli.py
+│       ├── shell.py
 │       ├── enums.py
 │       ├── exceptions.py
 │       │
@@ -428,7 +479,8 @@ devspace/
     ├── test_json_store.py
     ├── test_git_inspector.py
     ├── test_command_runner.py
-    └── test_cli.py
+    ├── test_cli.py
+    └── test_shell.py
 ```
 
 ---
@@ -455,7 +507,13 @@ Example:
 }
 ```
 
-Only project configuration is persisted.
+Interactive-shell command history is stored separately at:
+
+```text
+~/.devspace/history
+```
+
+Only project configuration is persisted in `projects.json`.
 
 Git information such as branch, working-tree state, and latest commit is queried live and is never stored.
 
@@ -561,7 +619,7 @@ uv run pytest -q
 Run DevSpace from the development environment:
 
 ```bash
-uv run devspace --help
+uv run devspace
 ```
 
 For editable global development:
@@ -595,53 +653,66 @@ DevSpace includes tests for:
 - CLI registration and removal
 - CLI Git information
 - CLI run/test execution
+- Interactive shell sessions and the single-entry-point behavior
 - Friendly CLI error handling
 
-Tests use temporary directories so normal user projects and the real DevSpace registry are not modified.
+Tests use temporary directories and a temporary home directory, so normal user projects and the real DevSpace registry are not modified.
 
 ---
 
 # Example Workflow
 
-Register projects:
+Start DevSpace:
 
 ```bash
-devspace add raglens "/projects/RAGLens"
-devspace add "AI Agents" "/projects/AI Agents"
-devspace add frontend "/projects/frontend"
+devspace
+```
+
+Register projects:
+
+```text
+devspace> add raglens "/projects/RAGLens"
+devspace> add "AI Agents" "/projects/AI Agents"
+devspace> add frontend "/projects/frontend"
 ```
 
 Check your workspace:
 
-```bash
-devspace list
+```text
+devspace> list
 ```
 
 Inspect one project:
 
-```bash
-devspace info raglens
+```text
+devspace> info raglens
 ```
 
 Check its Git state:
 
-```bash
-devspace status raglens
+```text
+devspace> status raglens
 ```
 
 Start it:
 
-```bash
-devspace run raglens
+```text
+devspace> run raglens
 ```
 
 Run its tests:
 
-```bash
-devspace test raglens
+```text
+devspace> test raglens
 ```
 
-All of these commands can be executed from any directory.
+Leave the shell:
+
+```text
+devspace> exit
+```
+
+The shell can be started from any directory, and every project runs in its own registered directory.
 
 ---
 
@@ -656,7 +727,9 @@ It does not currently include:
 - Environment discovery
 - Git commit/push/pull operations
 - Remote repository management
-- GUI
+- One-off command-line subcommands (everything runs inside the shell)
+- GUI or full-screen terminal UI
+- Tab completion in the interactive shell
 - Database storage
 - Cloud synchronization
 - Complex shell pipelines
@@ -664,8 +737,6 @@ It does not currently include:
 The goal of V1 is to provide a small, reliable local developer workspace manager without unnecessary abstraction or configuration.
 
 ---
-
-## License
 
 ## License
 

@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from typing import Annotated
 
@@ -13,20 +14,25 @@ from devspace.registry.project_registry import ProjectRegistry
 from devspace.storage.json_store import JsonProjectStore
 from devspace.services.command_runner import CommandRunner
 from devspace.services.git_inspector import GitInspector
+from devspace.shell import run_shell
 
 
 
 
-app = typer.Typer(no_args_is_help=True)
-
-
-@app.callback()
-def main() -> None:
-    """DevSpace: register and manage your local projects."""
+# The command registry. DevSpace is used through the interactive shell (see start()),
+# which dispatches each line you type to one of these commands.
+app = typer.Typer(
+    help="DevSpace: register and manage your local projects.",
+    add_completion=False,
+)
 
 
 def _storage_path() -> Path:
     return Path.home() / ".devspace" / "projects.json"
+
+
+def _history_path() -> Path:
+    return Path.home() / ".devspace" / "history"
 
 
 def _build_registry() -> ProjectRegistry:
@@ -231,5 +237,18 @@ def info(
     console.print(f"Last commit:    {escape(git_info.last_commit or 'No commits yet')}")
 
 
+def start() -> None:
+    """Entry point for the `devspace` command: open the interactive shell."""
+    if len(sys.argv) > 1:
+        typer.echo(
+            "Error: devspace runs as an interactive shell and takes no arguments.\n"
+            "Run 'devspace' to start it, then type commands such as 'list'.",
+            err=True,
+        )
+        raise SystemExit(2)
+
+    run_shell(app, _history_path())
+
+
 if __name__ == "__main__":
-    app()
+    start()
